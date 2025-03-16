@@ -14,7 +14,7 @@ export class GitHubUrlParserError extends Error {
    */
   constructor(message, url) {
     super(message);
-    this.name = 'GitHubUrlParserError';
+    this.name = "GitHubUrlParserError";
     this.url = url;
     this.date = new Date();
   }
@@ -43,11 +43,13 @@ export default class GitHubUrlParser {
    */
   static #patterns = {
     // URLs estándar de GitHub (incluyendo /tree/ y /blob/)
-    standard: /^(?:https?:\/\/)?(?:www\.)?github\.com\/([^\/]+)\/([^\/]+)(?:\.git)?(?:\/(?:tree|blob)\/([^\/]+)(?:\/(.+))?)?$/,
+    standard:
+      /^(?:https?:\/\/)?(?:www\.)?github\.com\/([^\/]+)\/([^\/]+)(?:\.git)?(?:\/(?:tree|blob)\/([^\/]+)(?:\/(.+))?)?$/,
     // URLs de git clone
     gitUrl: /^(?:git@github\.com:)([^\/]+)\/([^\/]+)(?:\.git)?$/,
     // URLs https para clonar
-    httpsClone: /^(?:https?:\/\/)?(?:www\.)?github\.com\/([^\/]+)\/([^\/]+)(?:\.git)?$/
+    httpsClone:
+      /^(?:https?:\/\/)?(?:www\.)?github\.com\/([^\/]+)\/([^\/]+)(?:\.git)?$/,
   };
 
   /**
@@ -57,20 +59,23 @@ export default class GitHubUrlParser {
    * @returns {boolean} - Verdadero si es una URL válida
    */
   static #isValidUrl(url) {
-    if (!url || typeof url !== 'string') {
+    if (!url || typeof url !== "string") {
       return false;
     }
-    
+
     try {
       // Intentar crear un objeto URL para validar formato básico
       // Agregamos https:// si no tiene protocolo
-      const urlString = url.startsWith('http') || url.startsWith('git@') ? url : `https://${url}`;
-      
+      const urlString =
+        url.startsWith("http") || url.startsWith("git@")
+          ? url
+          : `https://${url}`;
+
       // Para URLs con formato git@github.com:owner/repo.git no usamos new URL
-      if (url.startsWith('git@')) {
+      if (url.startsWith("git@")) {
         return true;
       }
-      
+
       new URL(urlString);
       return true;
     } catch (e) {
@@ -86,64 +91,73 @@ export default class GitHubUrlParser {
    */
   static parse(url) {
     // Validar la entrada
-    if (!url || typeof url !== 'string') {
-      throw new GitHubUrlParserError('La URL no puede estar vacía y debe ser una cadena de texto', url);
+    if (!url || typeof url !== "string") {
+      throw new GitHubUrlParserError(
+        "La URL no puede estar vacía y debe ser una cadena de texto",
+        url
+      );
     }
 
     // Comprobar si es una URL válida
     if (!this.#isValidUrl(url)) {
-      throw new GitHubUrlParserError('Formato de URL inválido', url);
+      throw new GitHubUrlParserError("Formato de URL inválido", url);
     }
 
     // Eliminar barras finales si existen
-    const cleanUrl = url.replace(/\/+$/, '');
-    
+    const cleanUrl = url.replace(/\/+$/, "");
+
     // Intentar con los diferentes patrones
     for (const [patternName, pattern] of Object.entries(this.#patterns)) {
       const match = cleanUrl.match(pattern);
-      
+
       if (match) {
         // Extraer componentes según el tipo de patrón
         const owner = match[1];
-        const repo = match[2]?.replace(/\.git$/, '');
+        const repo = match[2]?.replace(/\.git$/, "");
         const branch = match[3] || null;
         const path = match[4] || null;
-        
+
         // Construir la URL base con formato .git
         const baseUrl = `https://github.com/${owner}/${repo}.git`;
-        
+
         // Crear el objeto de detalles si hay información de rama y carpeta
         const details = branch ? { branch, folder: path } : null;
-        
+
         return {
           baseUrl,
           details,
           owner,
           repo,
           fullName: `${owner}/${repo}`,
-          path: path ? (branch ? `${branch}/${path}` : path) : null
+          path: path ? (branch ? `${branch}/${path}` : path) : null,
         };
       }
     }
 
     // Si llegamos aquí, ninguno de los patrones coincidió
-    throw new GitHubUrlParserError('URL no reconocida como repositorio válido de GitHub', url);
+    throw new GitHubUrlParserError(
+      "URL no reconocida como repositorio válido de GitHub",
+      url
+    );
   }
 
   /**
    * Verifica si una URL es de GitHub
    * @param {string} url - URL a verificar
+   * @param {Function} callback - una devolución de llamada para un mensaje de error personalizado
    * @returns {boolean} - Verdadero si es una URL de GitHub
    */
-  static isGitHubUrl(url) {
+  static isGitHubUrl(url, callback = false) {
     if (!this.#isValidUrl(url)) {
+      if (callback) callback();
       return false;
     }
-    
+
     try {
       this.parse(url);
       return true;
     } catch (error) {
+      if (callback) callback();
       return false;
     }
   }
@@ -156,14 +170,14 @@ export default class GitHubUrlParser {
    */
   static toCloneUrl(url) {
     const parsed = this.parse(url);
-    
+
     return {
       https: `https://github.com/${parsed.owner}/${parsed.repo}.git`,
       ssh: `git@github.com:${parsed.owner}/${parsed.repo}.git`,
-      cli: `gh repo clone ${parsed.owner}/${parsed.repo}`
+      cli: `gh repo clone ${parsed.owner}/${parsed.repo}`,
     };
   }
-  
+
   /**
    * Convierte una URL de GitHub a una URL de descarga ZIP
    * @param {string} url - URL de GitHub
@@ -172,11 +186,11 @@ export default class GitHubUrlParser {
    */
   static toZipUrl(url) {
     const parsed = this.parse(url);
-    const branch = parsed.details?.branch || 'main';
-    
+    const branch = parsed.details?.branch || "main";
+
     return `https://github.com/${parsed.owner}/${parsed.repo}/archive/refs/heads/${branch}.zip`;
   }
-  
+
   /**
    * Genera URLs relacionadas con la URL proporcionada
    * @param {string} url - URL de GitHub
@@ -185,9 +199,9 @@ export default class GitHubUrlParser {
    */
   static getRelatedUrls(url) {
     const parsed = this.parse(url);
-    const branch = parsed.details?.branch || 'main';
-    const path = parsed.details?.folder || '';
-    
+    const branch = parsed.details?.branch || "main";
+    const path = parsed.details?.folder || "";
+
     return {
       repository: `https://github.com/${parsed.owner}/${parsed.repo}`,
       issues: `https://github.com/${parsed.owner}/${parsed.repo}/issues`,
@@ -195,8 +209,12 @@ export default class GitHubUrlParser {
       wiki: `https://github.com/${parsed.owner}/${parsed.repo}/wiki`,
       actions: `https://github.com/${parsed.owner}/${parsed.repo}/actions`,
       branches: `https://github.com/${parsed.owner}/${parsed.repo}/branches`,
-      currentBranch: branch ? `https://github.com/${parsed.owner}/${parsed.repo}/tree/${branch}` : null,
-      currentPath: path ? `https://github.com/${parsed.owner}/${parsed.repo}/tree/${branch}/${path}` : null
+      currentBranch: branch
+        ? `https://github.com/${parsed.owner}/${parsed.repo}/tree/${branch}`
+        : null,
+      currentPath: path
+        ? `https://github.com/${parsed.owner}/${parsed.repo}/tree/${branch}/${path}`
+        : null,
     };
   }
 }
