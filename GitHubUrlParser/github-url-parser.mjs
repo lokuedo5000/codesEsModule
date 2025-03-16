@@ -144,12 +144,13 @@ export default class GitHubUrlParser {
   /**
    * Verifica si una URL es de GitHub
    * @param {string} url - URL a verificar
-   * @param {Function} callback - una devolución de llamada para un mensaje de error personalizado
+   * @param {function} errValidParse - un callback para un mensaje de error de parse de la url GitHub personalizado
+   * @param {function} errValidUrl - un callback para un mensaje de error en caso de no ser una url
    * @returns {boolean} - Verdadero si es una URL de GitHub
    */
-  static isGitHubUrl(url, callback = false) {
+  static isGitHubUrl(url, errValidParse = false, errValidUrl = false) {
     if (!this.#isValidUrl(url)) {
-      if (callback) callback();
+      if (errValidUrl) errValidUrl();
       return false;
     }
 
@@ -157,7 +158,7 @@ export default class GitHubUrlParser {
       this.parse(url);
       return true;
     } catch (error) {
-      if (callback) callback();
+      if (errValidParse) errValidParse();
       return false;
     }
   }
